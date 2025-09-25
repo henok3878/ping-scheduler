@@ -22,7 +22,7 @@ jobs:
             delay_seconds: 0
           - name: scriptify-api
             url: https://bitwise42-scriptify-api.hf.space/health
-            delay_seconds: 300
+            delay_seconds: 180
     steps:
       - name: Show target
         run: echo "Pinging ${{ matrix.url }} after ${{ matrix.delay_seconds }}s delay"

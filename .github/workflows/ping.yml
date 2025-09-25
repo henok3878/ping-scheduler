@@ -1,0 +1,48 @@
+name: Ping Scheduler
+
+on:
+  schedule:
+    # every 6 hours UTC
+    - cron: "0 */6 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: ping-scheduler
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: transformer-demo
+            url: https://bitwise42-transformer-demo.hf.space/
+            delay_seconds: 0
+          - name: scriptify-api
+            url: https://bitwise42-scriptify-api.hf.space/health
+            delay_seconds: 300
+    steps:
+      - name: Show target
+        run: echo "Pinging ${{ matrix.url }} after ${{ matrix.delay_seconds }}s delay"
+
+      - name: Optional delay
+        run: sleep "${{ matrix.delay_seconds }}"
+
+      - name: Ping with retries
+        run: |
+          set -e
+          URL=${{ matrix.url }}
+          for i in 1 2 3; do
+            echo "Attempt $i on $URL..."
+            code=$(curl -sSL -m 60 -o /dev/null -w "%{http_code}" "$URL" || true)
+            echo "HTTP $code"
+            if [ -n "$code" ] && [ "$code" -ge 200 ] && [ "$code" -lt 500 ]; then
+              echo "Success"
+              exit 0
+            fi
+            sleep $((30 + 15 * i))
+          done
+          echo "Failed to reach $URL after 3 tries"
+          exit 1
